@@ -1,5 +1,4 @@
-__# House Price Analysis Data Pipeline
-## Interview Practical Implementation
+## House Price Analysis Data Pipeline
 **Date**: 09/01/2026
 **Author**: Jian Ouyang
 **Platform**: Microsoft Fabric

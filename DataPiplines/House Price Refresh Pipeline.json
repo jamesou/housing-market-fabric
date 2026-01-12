@@ -1,0 +1,148 @@
+{
+    "name": "House Price Refresh Pipeline",
+    "objectId": "d6fcc4c4-df3b-448b-a3c8-d58e78fd8ec5",
+    "properties": {
+        "activities": [
+            {
+                "name": "01_Bronze_Ingestion",
+                "type": "TridentNotebook",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "typeProperties": {
+                    "notebookId": "9f6d0714-8365-4678-ab9f-78b1ef106220",
+                    "workspaceId": "9c88270a-3281-4af9-8314-5f89575d7662"
+                }
+            },
+            {
+                "name": "02_Silver_Cleaning",
+                "type": "TridentNotebook",
+                "dependsOn": [
+                    {
+                        "activity": "01_Bronze_Ingestion",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "typeProperties": {
+                    "notebookId": "8122c72c-a40f-4029-bc17-f4988336a858",
+                    "workspaceId": "9c88270a-3281-4af9-8314-5f89575d7662"
+                }
+            },
+            {
+                "name": "03_gold_star_schema",
+                "type": "TridentNotebook",
+                "dependsOn": [
+                    {
+                        "activity": "02_Silver_Cleaning",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "typeProperties": {
+                    "notebookId": "fdef45b7-0400-4dab-a3b3-f1dad541f920",
+                    "workspaceId": "9c88270a-3281-4af9-8314-5f89575d7662"
+                }
+            },
+            {
+                "name": "Housing Price Model",
+                "type": "PBISemanticModelRefresh",
+                "dependsOn": [
+                    {
+                        "activity": "03_gold_star_schema",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "typeProperties": {
+                    "method": "post",
+                    "waitOnCompletion": true,
+                    "commitMode": "Transactional",
+                    "operationType": "SemanticModelRefresh",
+                    "groupId": "9c88270a-3281-4af9-8314-5f89575d7662",
+                    "datasetId": "3d01858c-13f0-44b2-ab52-f77f816dff2e"
+                },
+                "externalReferences": {
+                    "connection": "348e65d1-8ee3-4d18-bc3b-74d3451151b8"
+                }
+            },
+            {
+                "name": "Send an alter email",
+                "description": "Send an alter email if tasks failed",
+                "type": "Office365Email",
+                "dependsOn": [
+                    {
+                        "activity": "Housing Price Model",
+                        "dependencyConditions": [
+                            "Failed"
+                        ]
+                    },
+                    {
+                        "activity": "03_gold_star_schema",
+                        "dependencyConditions": [
+                            "Failed"
+                        ]
+                    },
+                    {
+                        "activity": "02_Silver_Cleaning",
+                        "dependencyConditions": [
+                            "Failed"
+                        ]
+                    },
+                    {
+                        "activity": "01_Bronze_Ingestion",
+                        "dependencyConditions": [
+                            "Failed"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "typeProperties": {
+                    "to": "jamesou168@gmail.com",
+                    "subject": "House Price Pipeline Failed",
+                    "body": "<p>\nPipeline running failed!\nWorkspace:@{pipeline().DataFactory}\npipline:@{pipeline().Pipeline}\nplease check the RunId:@{pipeline().RunId} in Fabric Pipeline logs\ntime: @{utcnow()}\n</p>\n\n"
+                },
+                "externalReferences": {
+                    "connection": "2d875040-56ba-4733-b225-5f2b4e7b7c70"
+                }
+            }
+        ],
+        "lastModifiedByObjectId": "742630e6-50e9-4d45-9a06-37dbc1ad7336",
+        "lastPublishTime": "2026-01-10T23:39:47Z"
+    }
+}
